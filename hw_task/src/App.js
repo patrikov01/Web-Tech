@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
 import './App.css';
-import backgroundImage from './images/clouds.jfif';
 
 function App() {
   const [showFileList, setShowFileList] = useState(false);
@@ -15,17 +14,21 @@ function App() {
   function enterSubdirectory(subdirName) {
     const subdirIndex = fileList.indexOf(subdirName);
     if (subdirIndex !== -1) {
+      const numFiles = Math.floor(Math.random() * 5) + 1;
+      const files = [];
+      for (let i = 1; i <= numFiles; i++) {
+        files.push(`${subdirName}/file${i}.txt`);
+      }
       setFileList([
         ...fileList.slice(0, subdirIndex),
-        `${subdirName}/file1.txt`,
-        `${subdirName}/file2.txt`,
+        ...files,
         ...fileList.slice(subdirIndex + 1)
       ]);
     } else {
       alert(`Subdirectory "${subdirName}" not found`);
     }
   }
-
+  
   function handleShowFilesClick() {
     setShowFileList(true);
   }
