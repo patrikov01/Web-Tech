@@ -5,10 +5,10 @@ function App() {
   const [showFileList, setShowFileList] = useState(false);
   const [fileList, setFileList] = useState([
     'subdirectory1',
-    'subdir2',
-    'subdir3',
-    'subdir4',
-    'subdir5'
+    'web_tech_is_cool',
+    'abc',
+    'name',
+    'some_files'
   ]);
 
   function enterSubdirectory(subdirName) {
@@ -25,7 +25,7 @@ function App() {
         ...fileList.slice(subdirIndex + 1)
       ]);
     } else {
-      alert(`Subdirectory "${subdirName}" not found`);
+      alert(`Subdirectory "${subdirName}" not found!`);
     }
   }
   
@@ -44,16 +44,14 @@ function App() {
         <div>
           <button onClick={handleHideFilesClick}>Hide files</button>
           <ul>
-            {fileList.map(item => (
-              <li key={item}>
-                {item.startsWith('subdir') ? (
-                  <a href="#" onClick={() => enterSubdirectory(item)}>{item}</a>
-                ) : (
-                  item
-                )}
-                
-              </li>
-            ))}
+          {fileList.map((item) => (
+            <li key={item}>
+              <a href="#" onClick={() => enterSubdirectory(item)}>
+               {item}
+              </a>
+            </li>
+          ))}
+
           </ul>
           <form onSubmit={event => {
             event.preventDefault();
