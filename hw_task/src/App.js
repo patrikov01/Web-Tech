@@ -2,10 +2,12 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { toast } from 'react-toastify';
 import 'react-toastify/dist/ReactToastify.css';
+import './App.css';
 
 function App() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadedFiles, setUploadedFiles] = useState([]);
+  const [showFiles, setShowFiles] = useState(false);
 
   useEffect(() => {
     fetch("/api/uploads")
@@ -89,23 +91,32 @@ function App() {
   };
 
   return (
-    <div>
-      <h1>File Upload</h1>
-      <input type="file" onChange={handleFileSelect} />
-      <button onClick={handleFileUpload}>Upload</button>
+    <div className="app-container">
+      <h1 className="header">Personal Cloud</h1>
+      <div className="file-upload">
+        <input type="file" onChange={handleFileSelect} />
+        <button onClick={handleFileUpload}>Upload</button>
+      </div>
 
       <h2>Uploaded Files:</h2>
-      <ul>
-        {uploadedFiles.map((filename) => (
-          <li key={filename}>
-            <span>{filename}</span>
-            <button onClick={() => handleFileDownload(filename)}>Download</button>
-            <button onClick={() => handleFileDelete(filename)}>Delete</button>
-          </li>
-        ))}
-      </ul>
+      <button onClick={() => setShowFiles(!showFiles)}>
+        {showFiles ? 'Hide Files' : 'Show Files'}
+      </button>
+      {showFiles && (
+        <ul className="file-list">
+          {uploadedFiles.map((filename) => (
+            <li key={filename}>
+              <span>{filename}</span>
+              <div className="file-actions">
+                <button onClick={() => handleFileDownload(filename)}>Download</button>
+                <button onClick={() => handleFileDelete(filename)}>Delete</button>
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
     </div>
-  );
+);
 }
 
 export default App;

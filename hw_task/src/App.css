@@ -42,16 +42,47 @@
   text-align: center;
 }
 
-
- ul {
-  list-style: none;
-  margin: 0; 
-  padding: 0;  
+.app-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
-li {
-  margin-bottom: 0.5em;
-} 
+.header {
+  text-align: center;
+  margin-top: 40px;
+}
+
+.file-upload {
+  display: flex;
+  align-items: center;
+  margin-bottom: 20px;
+}
+
+.file-list {
+  list-style: none;
+  padding: 0;
+}
+
+.file-list li {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.file-actions {
+  display: flex;
+}
+
+.file-actions button {
+  margin-left: 10px;
+}
+
+button {
+  margin-top: 10px;
+}
+
 
 body {
   background-image: url('./images/clouds.jfif');
