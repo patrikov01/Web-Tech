@@ -8,6 +8,7 @@ function App() {
   const [selectedFile, setSelectedFile] = useState(null);
   const [uploadedFiles, setUploadedFiles] = useState([]);
   const [showFiles, setShowFiles] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
 
   useEffect(() => {
     fetch("/api/uploads")
@@ -90,6 +91,10 @@ function App() {
     }
   };
 
+  const filteredFiles = uploadedFiles.filter((filename) =>
+    filename.toLowerCase().includes(searchTerm.toLowerCase())
+);
+
   return (
     <div className="app-container">
       <h1 className="header">Personal Cloud</h1>
@@ -99,12 +104,22 @@ function App() {
       </div>
 
       <h2>Uploaded Files:</h2>
+      <div className="search-bar">
+        <input
+          type="text"
+          placeholder="Search files..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+      </div>
+
       <button onClick={() => setShowFiles(!showFiles)}>
         {showFiles ? 'Hide Files' : 'Show Files'}
       </button>
+
       {showFiles && (
         <ul className="file-list">
-          {uploadedFiles.map((filename) => (
+          {filteredFiles.map((filename) => (
             <li key={filename}>
               <span>{filename}</span>
               <div className="file-actions">
@@ -116,7 +131,7 @@ function App() {
         </ul>
       )}
     </div>
-);
+  );
 }
 
 export default App;

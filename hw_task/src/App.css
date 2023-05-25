@@ -83,6 +83,9 @@ button {
   margin-top: 10px;
 }
 
+.search-bar {
+  margin-bottom: 10px;
+}
 
 body {
   background-image: url('./images/clouds.jfif');
