@@ -12,8 +12,8 @@ function App() {
 
   useEffect(() => {
     fetch("/api/uploads")
-    .then(res => res.json())
-    .then(data => setUploadedFiles(data));
+      .then(res => res.json())
+      .then(data => setUploadedFiles(data));
     //fetchUploadedFiles();
   }, []);
 
@@ -22,7 +22,6 @@ function App() {
   };
 
   const handleFileUpload = async () => {
-    
     if (!selectedFile) {
       toast.error('Please select a file');
       return;
@@ -91,9 +90,30 @@ function App() {
     }
   };
 
+  const handleFileRename = async (oldFilename) => {
+    const newFilename = prompt('Enter the new file name:', oldFilename);
+    if (newFilename === null) return; // User canceled
+
+    try {
+      await axios.put('http://localhost:3001/api/rename', {
+        oldFilename,
+        newFilename,
+      });
+
+      toast.success(`File "${oldFilename}" renamed to "${newFilename}"`);
+      fetchUploadedFiles();
+    } catch (error) {
+      if (error.response) {
+        toast.error(error.response.data.error);
+      } else {
+        toast.error('Failed to rename the file');
+      }
+    }
+  };
+
   const filteredFiles = uploadedFiles.filter((filename) =>
     filename.toLowerCase().includes(searchTerm.toLowerCase())
-);
+  );
 
   return (
     <div className="app-container">
@@ -125,6 +145,7 @@ function App() {
               <div className="file-actions">
                 <button onClick={() => handleFileDownload(filename)}>Download</button>
                 <button onClick={() => handleFileDelete(filename)}>Delete</button>
+                <button onClick={() => handleFileRename(filename)}>Rename</button>
               </div>
             </li>
           ))}
