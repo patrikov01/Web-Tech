@@ -1,328 +1,216 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useContext } from 'react';
 import axios from 'axios';
-import { toast } from 'react-toastify';
-import 'react-toastify/dist/ReactToastify.css';
+import { useNavigate } from 'react-router-dom';
+import { AuthContext } from './AuthContext';
 import './App.css';
 
-function App() {
-  const [selectedFile, setSelectedFile] = useState(null);
-  const [uploadedFiles, setUploadedFiles] = useState([]);
-  const [showFiles, setShowFiles] = useState(false);
-  const [searchTerm, setSearchTerm] = useState('');
-  const [subdirectoryName, setSubdirectoryName] = useState('');
-  const [folderName, setFolderName] = useState('');
-  const [selectedFiles, setSelectedFiles] = useState([]);
-  const [selectedFolder, setSelectedFolder] = useState(null);
-  const [folders, setFolders] = useState([]);
-  const [openedFolder, setOpenedFolder] = useState('');
+const Dashboard = () => {
+    const [selectedFile, setSelectedFile] = useState(null);
+    const [files, setFiles] = useState([]);
+    const [fileToUpdate, setFileToUpdate] = useState(null);
+    const [newFilename, setNewFilename] = useState('');
+    const [searchTerm, setSearchTerm] = useState('');
+    const { isAuthenticated, logout } = useContext(AuthContext);
+    const navigate = useNavigate();
 
-  useEffect(() => {
-    fetchUploadedFiles();
-    fetchFolders();
-  }, []);
+    useEffect(() => {
+        if (!isAuthenticated) {
+            navigate('/login');
+        }
+    }, [isAuthenticated, navigate]);
 
-  const handleFileSelect = (event) => {
-    setSelectedFile(event.target.files[0]);
-  };
+    const getFiles = async () => {
+        try {
+            const response = await axios.get('http://localhost:3000/api/uploads', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
 
-  const handleFileUpload = async () => {
-    if (!selectedFile) {
-      toast.error('Please select a file');
-      return;
-    }
+            if (response.data) {
+                setFiles(response.data.files);
+            } else {
+                alert('Failed to fetch files');
+            }
+        } catch (error) {
+            console.error('Fetch files error', error);
+            if (error.response) {
+                alert(`Fetch files error: ${error.response.data.error}`);
+            } else if (error.request) {
+                alert('Fetch files error: No response from server');
+            } else {
+                alert(`Fetch files error: ${error.message}`);
+            }
+        }
+    };
 
-    const formData = new FormData();
-    formData.append('file', selectedFile);
-    try {
-      const response = await axios.post('http://localhost:3001/api/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-        },
-      });
-      toast.success(response.data.message);
-      fetchUploadedFiles();
-    } catch (error) {
-      if (error.response) {
-        toast.error(error.response.data.error);
-      } else {
-        toast.error('Failed to upload the file');
-      }
-    }
-  };
+    useEffect(() => {
+        getFiles();
+    }, []);
 
-  const fetchUploadedFiles = async () => {
-    try {
-      const response = await axios.get('http://localhost:3001/api/uploads');
-      setUploadedFiles(response.data.files);
-    } catch (error) {
-      toast.error('Failed to fetch uploaded files');
-    }
-  };
+    const handleFileChange = (event) => {
+        setSelectedFile(event.target.files[0]);
+    };
 
-  const handleFileDownload = async (filename) => {
-    try {
-      const response = await axios.get(`http://localhost:3001/api/uploads/${filename}`, {
-        responseType: 'blob',
-      });
+    const handleUpload = async () => {
+        if (!selectedFile) {
+            alert('Please select a file to upload');
+            return;
+        }
 
-      const downloadUrl = window.URL.createObjectURL(new Blob([response.data]));
-      const link = document.createElement('a');
-      link.href = downloadUrl;
-      link.setAttribute('download', filename);
-      document.body.appendChild(link);
-      link.click();
-      link.remove();
-    } catch (error) {
-      toast.error('Failed to download the file');
-    }
-  };
+        const formData = new FormData();
+        formData.append('file', selectedFile);
 
-  const handleFileDelete = async (filename) => {
-    try {
-      await axios.delete('http://localhost:3001/api/delete', {
-        data: { filename },
-      });
+        try {
+            const response = await axios.post('http://localhost:3000/api/upload', formData, {
+                headers: {
+                    'Content-Type': 'multipart/form-data',
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
 
-      toast.success(`File "${filename}" deleted successfully!`);
-      fetchUploadedFiles();
-    } catch (error) {
-      if (error.response) {
-        toast.error(error.response.data.error);
-      } else {
-        toast.error('Failed to delete the file');
-      }
-    }
-  };
+            if (response.data) {
+                alert('File uploaded successfully');
+                // Refresh the list of files
+                getFiles();
+            } else {
+                alert('File upload failed');
+            }
+        } catch (error) {
+            console.error('File upload error', error);
+            if (error.response) {
+                alert(`File upload error: ${error.response.data.error}`);
+            } else if (error.request) {
+                alert('File upload error: No response from server');
+            } else {
+                alert(`File upload error: ${error.message}`);
+            }
+        }
+    };
 
-  const handleFileRename = async (oldFilename) => {
-    const newFilename = prompt('Enter the new file name:', oldFilename);
-    if (newFilename === null) return;
+    const handleDelete = async (filename) => {
+        try {
+            const response = await axios.delete('http://localhost:3000/api/delete', {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                data: {
+                    filename: filename
+                }
+            });
 
-    try {
-      await axios.put('http://localhost:3001/api/rename', {
-        oldFilename,
-        newFilename,
-      });
+            if (response.data) {
+                alert('File deleted successfully');
+                // Refresh the list of files
+                getFiles();
+            } else {
+                alert('File delete failed');
+            }
+        } catch (error) {
+            console.error('File delete error', error);
+            if (error.response) {
+                alert(`File delete error: ${error.response.data.error}`);
+            } else if (error.request) {
+                alert('File delete error: No response from server');
+            } else {
+                alert(`File delete error: ${error.message}`);
+            }
+        }
+    };
 
-      toast.success(`File "${oldFilename}" renamed to "${newFilename}"`);
-      fetchUploadedFiles();
-    } catch (error) {
-      if (error.response) {
-        toast.error(error.response.data.error);
-      } else {
-        toast.error('Failed to rename the file');
-      }
-    }
-  };
+    const handleUpdate = async (oldFilename) => {
+        if (!newFilename) {
+            alert('Please enter a new filename');
+            return;
+        }
 
-  const handleSearch = (event) => {
-    setSearchTerm(event.target.value);
-  };
+        try {
+            const response = await axios.put('http://localhost:3000/api/rename', {
+                oldFilename: oldFilename,
+                newFilename: newFilename
+            }, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                }
+            });
 
-  const handleSubdirectoryChange = (event) => {
-    setSubdirectoryName(event.target.value);
-  };
+            if (response.data) {
+                alert('File updated successfully');
+                // Reset new filename
+                setNewFilename('');
+                // Refresh the list of files
+                await getFiles();
+            } else {
+                alert('File update failed');
+            }
+        } catch (error) {
+            console.error('File update error', error);
+            if (error.response) {
+                alert(`File update error: ${error.response.data.error}`);
+            } else if (error.request) {
+                alert('File update error: No response from server');
+            } else {
+                alert(`File update error: ${error.message}`);
+            }
+        }
+    };
 
-  const handleFolderChange = (event) => {
-    const folderName = event.target.value;
-    const selectedFolder = folders.find((folder) => folder.name === folderName);
-    setSelectedFolder(selectedFolder);
-  };
-  
+    const handleDownload = async (filename) => {
+        try {
+            const response = await axios.get(`http://localhost:3000/api/uploads/${filename}`, {
+                headers: {
+                    'Authorization': `Bearer ${localStorage.getItem('token')}`
+                },
+                responseType: 'blob'  
+            });
 
-  const handleFolderSelect = (folder) => {
-    setSelectedFolder(folder);
-    setOpenedFolder(folder.name);
-  };
+            const downloadUrl = URL.createObjectURL(new Blob([response.data]));
+            const link = document.createElement('a');
+            link.href = downloadUrl;
+            link.setAttribute('download', filename);
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        } catch (error) {
+            console.error('File download error', error);
+            if (error.response) {
+                alert(`File download error: ${error.response.data.error}`);
+            } else if (error.request) {
+                alert('File download error: No response from server');
+            } else {
+                alert(`File download error: ${error.message}`);
+            }
+        }
+    };
 
-  const fetchFolders = async () => {
-    try {
-      const response = await axios.get('http://localhost:3001/api/folders');
-      setFolders(response.data.folders);
-    } catch (error) {
-      toast.error('Failed to fetch folders');
-    }
-  };
 
-  const handleFolderCreate = async () => {
-    if (!folderName) {
-      toast.error('Please enter a folder name');
-      return;
-    }
-
-    try {
-      await axios.post('http://localhost:3001/api/folders', {
-        name: folderName,
-      });
-
-      toast.success(`Folder "${folderName}" created successfully!`);
-      fetchFolders();
-      setFolderName('');
-    } catch (error) {
-      if (error.response) {
-        toast.error(error.response.data.error);
-      } else {
-        toast.error('Failed to create the folder');
-      }
-    }
-  };
-
-  const handleFileMove = async () => {
-    if (selectedFiles.length === 0) {
-      toast.error('Please select at least one file');
-      return;
-    }
-
-    if (!selectedFolder) {
-      toast.error('Please select a folder');
-      return;
-    }
-
-    try {
-      await axios.post('http://localhost:3001/api/move', {
-        files: selectedFiles,
-        folder: selectedFolder.name,
-      });
-
-      toast.success('Files moved successfully!');
-      fetchUploadedFiles();
-      setSelectedFiles([]);
-    } catch (error) {
-      if (error.response) {
-        toast.error(error.response.data.error);
-      } else {
-        toast.error('Failed to move the files');
-      }
-    }
-  };
-
-  const handleFileSelectChange = (event, filename) => {
-    if (event.target.checked) {
-      setSelectedFiles((prevSelectedFiles) => [...prevSelectedFiles, filename]);
-    } else {
-      setSelectedFiles((prevSelectedFiles) => prevSelectedFiles.filter((file) => file !== filename));
-    }
-  };
-
-  return (
-    <div className="App">
-      <h1>File Manager</h1>
-
-      <div className="upload-section">
-        <h2>Upload a File</h2>
-        <input type="file" onChange={handleFileSelect} />
-        <button onClick={handleFileUpload}>Upload</button>
-      </div>
-
-      <div className="search-section">
-        <h2>Search Files</h2>
-        <input type="text" placeholder="Search" value={searchTerm} onChange={handleSearch} />
-      </div>
-
-      <div className="file-list">
-        <h2>Uploaded Files</h2>
-        {uploadedFiles.length > 0 ? (
-          <table>
-            <thead>
-              <tr>
-                <th>Name</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {uploadedFiles
-                .filter((file) => file.includes(searchTerm))
-                .map((file, index) => (
-                  <tr key={index}>
-                    <td>{file}</td>
-                    <td>
-                      <button onClick={() => handleFileDownload(file)}>Download</button>
-                      <button onClick={() => handleFileDelete(file)}>Delete</button>
-                      <button onClick={() => handleFileRename(file)}>Rename</button>
-                      <input
-                        type="checkbox"
-                        onChange={(event) => handleFileSelectChange(event, file)}
-                        checked={selectedFiles.includes(file)}
-                      />
-                    </td>
-                  </tr>
-                ))}
-            </tbody>
-          </table>
-        ) : (
-          <p>No files uploaded</p>
-        )}
-      </div>
-
-      <div className="folder-section">
-        <h2>Create Folder</h2>
-        <input type="text" placeholder="Folder Name" value={folderName} onChange={handleFolderChange} />
-        <button onClick={handleFolderCreate}>Create</button>
-      </div>
-
-      <div className="move-section">
-        <h2>Move Files</h2>
+    return (
         <div>
-          <label>Select Folder:</label>
-          <select value={selectedFolder ? selectedFolder.name : ''} onChange={handleFolderChange}>
-            <option value="">-- Select Folder --</option>
-            {folders.map((folder) => (
-              <option key={folder.id} value={folder.name}>
-                {folder.name}
-              </option>
-            ))}
-          </select>
-        </div>
-        <div>
-          <label>Select Files:</label>
-          {uploadedFiles.length > 0 ? (
-            <table>
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Select</th>
-                </tr>
-              </thead>
-              <tbody>
-                {uploadedFiles.map((file, index) => (
-                  <tr key={index}>
-                    <td>{file}</td>
-                    <td>
-                      <input
-                        type="checkbox"
-                        onChange={(event) => handleFileSelectChange(event, file)}
-                        checked={selectedFiles.includes(file)}
-                      />
-                    </td>
-                  </tr>
+            <link href="https://fonts.googleapis.com/css2?family=Indie+Flower&display=swap" rel="stylesheet"></link>
+            <h2>Dashboard</h2>
+            <input type="file" onChange={handleFileChange} /> 
+
+            <button id="upload" onClick={handleUpload}>Upload</button>
+            <input type="text" placeholder="Search files..." onChange={event => setSearchTerm(event.target.value)} />
+            <h3>Your files:</h3>
+            <ul>
+                {files.filter(file => file.originalname.toLowerCase().includes(searchTerm.toLowerCase())).map(file => (
+                    <li key={file.filename}>
+                        {file.originalname}
+                        <button onClick={() => handleDelete(file.filename)}>Delete</button>
+                        <button onClick={() => setFileToUpdate(file.filename)}>Update</button>
+                        {fileToUpdate === file.filename && (
+                            <div>
+                                <input type="text" value={newFilename} onChange={(e) => setNewFilename(e.target.value)} />
+                                <button onClick={() => handleUpdate(file.filename)}>Submit Update</button>
+                            </div>
+                        )}
+                        <button onClick={() => handleDownload(file.filename)}>Download</button>
+                    </li>
                 ))}
-              </tbody>
-            </table>
-          ) : (
-            <p>No files uploaded</p>
-          )}
+            </ul>
         </div>
-        <button onClick={handleFileMove}>Move</button>
-      </div>
+    );
+};
 
-      <div className="folder-section">
-        <h2>Create Folder</h2>
-        <input type="text" placeholder="Folder Name" value={folderName} onChange={(e) => setFolderName(e.target.value)} />
-        <button onClick={handleFolderCreate}>Create</button>
-      </div>
-
-      <div className="folder-section">
-        <h2>Folders</h2>
-        <ul>
-          {folders.map((folder) => (
-            <li key={folder.name}>{folder.name}</li>
-          ))}
-        </ul>
-      </div>
-        
-      </div>
-    
-  );
-}
-
-export default App;
+export default Dashboard;
